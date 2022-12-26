@@ -1,0 +1,106 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: free5gmano
+spec:
+  selector:
+    matchLabels:
+      app: free5gmano
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: free5gmano
+    spec:
+      containers:
+        - name: free5gmano
+          image: free5gmano/free5gmano
+          env:
+            - name: FREE5GMANO_MYSQL_USER
+              value: "root"
+            - name: FREE5GMANO_MYSQL_PASSWORD
+              value: "password"
+            - name: FREE5GMANO_MYSQL_HOST
+              value: "free5gmano-mysql"
+            - name: FREE5GMANO_MYSQL_PORT
+              value: "3306"
+            - name: FREE5GMANO_DB_NAME
+              value: "free5gmano"
+          volumeMounts:
+            - name: free5gmano-template-storage
+              mountPath: /data/nm/
+            - name: free5gmano-plugin-storage
+              mountPath: /free5gmano/nssmf/plugin/
+      volumes:
+        - name: free5gmano-template-storage
+          persistentVolumeClaim:
+            claimName: free5gmano-template-pv-claim
+        - name: free5gmano-plugin-storage
+          persistentVolumeClaim:
+            claimName: free5gmano-plugin-pv-claim
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: free5gmano
+spec:
+  type: NodePort
+  ports:
+    - name: api-server
+      port: 8000
+      nodePort: 30088
+    - name: socket
+      port: 8888
+      nodePort: 30008
+  selector:
+    app: free5gmano
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: free5gmano-template-pv-volume
+  labels:
+    type: local
+spec:
+  capacity:
+    storage: 20Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/data/nm/"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: free5gmano-template-pv-claim
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: free5gmano-plugin-pv-volume
+  labels:
+    type: local
+spec:
+  capacity:
+    storage: 20Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/data/plugin/"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: free5gmano-plugin-pv-claim
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
